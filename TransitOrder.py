@@ -7,7 +7,7 @@ class User:
         self.orders = []
     
     def initTransitOrder(self):
-        t = Transit()
+        t = TransitOrder()
 
         src_dst = dict()
         print("Enter your source address:", end=' ')
@@ -39,18 +39,39 @@ class User:
         return
 
 
-class Transit:
+class TransitOrder:
     def __init__(self):
-        self.order_time = time.time()
+        self.order_time = time.time() #FIXME: yyyy:mm:dd, hh
+
+        self.location_info = LocationInfo()
+        self.goods_info = GoodsInfo()
+        self.order_stat = OrderStat()
+        self.financial_info = FinancialInfo()
+
+        self.porters = None
+        self.drivers = None
 
     def fill_form(self, info_dic):
+        if info_dic['form_type'] == 'src_dst':
+            self.location_info.set_loc(info_dic)
+        elif info_dic['form_type'] == 'goods_detail':
+            self.goods_info.set_goods(info_dic)
+        else:
+            exit()
 
         return
 
     def book_transit(self, d_time):
+        self.order_stat.set_time(d_time)
         return
 
     def confirm_deposit(self):
+        paid = self.financial_info.request_payment()
+        if paid:
+            d_time = self.order_stat.dispatch_time
+            self.porters, self.drivers = ResourceHandler.assign_resources(
+                self.location_info, self.goods_info, d_time)
+                
         return
 
 class LocationInfo:
@@ -82,22 +103,25 @@ class OrderStat:
     def set_status(self, stat):
         return
 
-class FinancalInfo:
-    def __init__(self, loc, goods_detail):
+    @property
+    def dispatch_time(self): return self.dispatch_time
+
+class FinancialInfo:
+    def __init__(self):
         self.dep_amount = None
         self.total_price = None
         self.paid = False
 
-    def check_payment(self):
+    def request_payment(self, loc, goods_detail):
         return
 
-    def calc_deposit(self, loc, goods_detail):
+    def __calc_deposit(self, loc, goods_detail):
         return
 
-    def calc_total_price(self, loc, goods_detail):
+    def __calc_total_price(self, loc, goods_detail):
         return
 
-    def request_payment(self, price):
+    def __pay(self, price):
         return
 
 class Schedule:
@@ -108,3 +132,12 @@ class EmployeeInfo:
     def __init__(self, employee_id):
         self.employee_id = employee_id
         self.shedule = Schedule()
+
+
+class ResourceHandler:
+
+    @staticmethod
+    def assign_resources(loc, goods_detail, d_time):
+        return
+
+
