@@ -174,8 +174,16 @@ class FinancialInfo:
 class ResourceHandler:
 
     @staticmethod
-    def assign_resources(loc, goods_detail, d_time):
-        return
+    def assign_resources(goods_detail, d_time):
+        porters, drivers = EmployeeStats.find_free_workers(goods_detail, d_time)
+
+        for porter in porters:
+            porter.assign_task(d_time)
+
+        for driver in drivers:
+            driver.assign_task(d_time)
+        
+        return porters, drivers
 
 
 class EmployeeStats:
@@ -183,7 +191,7 @@ class EmployeeStats:
     porters = []
 
     @staticmethod
-    def find_free_workers(loc, goods_detail, d_time):
+    def find_free_workers(goods_detail, d_time):
         available_porters = []
         available_drivers = []
         porters_needed = goods_detail.workers_count
@@ -205,12 +213,9 @@ class EmployeeStats:
                 available_drivers.append(driver)
                 drivers_needed -= 1
 
-        if (porters_needed == 0) and (drivers_needed == 0):
-            return available_porters, available_drivers
-        else:
-            return None, None
+        assert (porters_needed == 0) and (drivers_needed == 0)
+        return available_porters, available_drivers
         
-    
     @staticmethod
     def add_porter(porter):
         EmployeeStats.porters.append(porter)
@@ -224,18 +229,27 @@ class Driver:
     def __init__(self, employee_id):
         self.employee_info = EmployeeInfo(employee_id)
 
+    def assign_task(self, d_time):
+        self.employee_info.assign_task(d_time)
+
 
 class Porter:
     def __init__(self, employee_id):
         self.employee_info = EmployeeInfo(employee_id)
+    
+    def assign_task(self, d_time):
+        self.employee_info.assign_task(d_time)
 
 
 class EmployeeInfo:
     def __init__(self, employee_id):
         self.employee_id = employee_id
         self.schedule = Schedule()
+    
+    def assign_task(self, d_time):
+        self.schedule.assign_task(d_time)
 
 
-class Schedule:
+class Schedule:  #TODO: 
     def __init__(self) -> None:
         pass
