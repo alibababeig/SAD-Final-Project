@@ -90,6 +90,12 @@ class LocationInfo:
 
         return
 
+    @property
+    def src_address(self): return self.src_address
+
+    @property
+    def dst_address(self): return self.dst_address
+
 
 class GoodsInfo:
     def __init__(self):
@@ -106,6 +112,15 @@ class GoodsInfo:
 
         return
 
+    @property
+    def goods_type(self): return self.goods_type
+
+    @property
+    def goods_volume(self): return self.goods_volume
+
+    @property
+    def workers_count(self): return self.workers_count
+
 
 class OrderStat:
     def __init__(self):
@@ -113,9 +128,11 @@ class OrderStat:
         self.dispatch_time = None
 
     def set_time(self, d_time):
+        self.dispatch_time = d_time
         return
 
     def set_status(self, stat):
+        self.status = stat
         return
 
     @property
@@ -124,20 +141,33 @@ class OrderStat:
 
 class FinancialInfo:
     def __init__(self):
-        self.dep_amount = None
-        self.total_price = None
+        self.dep_amount = 0
+        self.total_price = 0
         self.paid = False
 
     def request_payment(self, loc, goods_detail):
+        self.__calc_total_price(loc, goods_detail)
+        self.__calc_deposit(0.5)
+        self.__pay(self.dep_amount)
+
         return
 
-    def __calc_deposit(self, loc, goods_detail):
+    def __calc_deposit(self, percentage):
+        self.dep_amount = self.total_price * percentage
         return
 
     def __calc_total_price(self, loc, goods_detail):
+        self.dep_amount += goods_detail.goods_volume * 10000
+        if goods_detail.goods_type == 'dangerous':
+            self.dep_amount *= 1.1
+        self.dep_amount += goods_detail.workers_count * 20000
+        # self.dep_amount += loc.dst_address - loc.src_address  # Overload - operator for address
+
         return
 
     def __pay(self, price):
+        # self.paid = SHAPARAK.pay(price)
+        self.paid = True
         return
 
 
