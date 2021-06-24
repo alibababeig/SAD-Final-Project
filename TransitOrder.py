@@ -74,6 +74,7 @@ class TransitOrder:
                 
         return
 
+
 class LocationInfo:
     def __init__(self):
         self.src_address = None
@@ -81,7 +82,14 @@ class LocationInfo:
         self.src_type = None
 
     def set_loc(self, src_dst):
+        assert src_dst['form_type'] == 'src_dst'
+
+        self.src_address = src_dst['src']
+        self.dst_address = src_dst['dst']
+        self.src_type = src_dst['src_type']
+
         return
+
 
 class GoodsInfo:
     def __init__(self):
@@ -90,7 +98,14 @@ class GoodsInfo:
         self.workers_count = None
 
     def set_goods(self, goods_detail):
+        assert goods_detail['form_type'] == 'goods_detail'
+
+        self.goods_type = goods_detail['goods_type']
+        self.goods_volume = goods_detail['volume']
+        self.workers_count = goods_detail['workers_count']
+
         return
+
 
 class OrderStat:
     def __init__(self):
@@ -105,6 +120,7 @@ class OrderStat:
 
     @property
     def dispatch_time(self): return self.dispatch_time
+
 
 class FinancialInfo:
     def __init__(self):
@@ -124,9 +140,11 @@ class FinancialInfo:
     def __pay(self, price):
         return
 
+
 class Schedule:
     def __init__(self) -> None:
         pass
+
 
 class EmployeeInfo:
     def __init__(self, employee_id):
