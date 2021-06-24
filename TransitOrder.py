@@ -31,7 +31,7 @@ class User:
 
         print("Enter your desired dispatch time: (yyyy:mm:dd, hh)", end=' ')
         d_time = input()
-        t.book_transit(d_time)
+        t.book_transit(d_time)  #TODO: Convert d_time to a proper datatype
 
         t.confirm_deposit()
 
@@ -171,17 +171,6 @@ class FinancialInfo:
         return
 
 
-class Schedule:
-    def __init__(self) -> None:
-        pass
-
-
-class EmployeeInfo:
-    def __init__(self, employee_id):
-        self.employee_id = employee_id
-        self.shedule = Schedule()
-
-
 class ResourceHandler:
 
     @staticmethod
@@ -189,3 +178,64 @@ class ResourceHandler:
         return
 
 
+class EmployeeStats:
+    drivers = []
+    porters = []
+
+    @staticmethod
+    def find_free_workers(loc, goods_detail, d_time):
+        available_porters = []
+        available_drivers = []
+        porters_needed = goods_detail.workers_count
+        drivers_needed = goods_detail.goods_volume / 12 # Each truck has a capacity
+                                                        # of 12 cubic meters
+        for porter in EmployeeStats.porters:
+            if porters_needed == 0:
+                break
+
+            if porter.is_available(d_time):
+                available_porters.append(porter)
+                porters_needed -= 1
+        
+        for driver in EmployeeStats.drivers:
+            if porters_needed == 0:
+                break
+
+            if driver.is_available(d_time):
+                available_drivers.append(driver)
+                drivers_needed -= 1
+
+        if (porters_needed == 0) and (drivers_needed == 0):
+            return available_porters, available_drivers
+        else:
+            return None, None
+        
+    
+    @staticmethod
+    def add_porter(porter):
+        EmployeeStats.porters.append(porter)
+
+    @staticmethod
+    def add_driver(driver):
+        EmployeeStats.drivers.append(driver)
+
+
+class Driver:
+    def __init__(self, employee_id):
+        self.employee_info = EmployeeInfo(employee_id)
+
+
+class Porter:
+    def __init__(self, employee_id):
+        self.employee_info = EmployeeInfo(employee_id)
+
+
+class EmployeeInfo:
+    def __init__(self, employee_id):
+        self.employee_id = employee_id
+        self.schedule = Schedule()
+
+
+class Schedule:
+    def __init__(self) -> None:
+        pass
