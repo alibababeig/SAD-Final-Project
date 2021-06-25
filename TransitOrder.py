@@ -1,7 +1,7 @@
 import time
-import math
 from data_access_layer.dao import DAO
 from employee.EmployeesStats import EmployeesStats
+from handler.ResourceHandler import ResourceHandler
 
 class User:
     def __init__(self, user_id, orders):
@@ -247,22 +247,6 @@ class FinancialInfo:
     # @property
     # def paid(self): return self.__paid
 
-
-class ResourceHandler:
-
-    @staticmethod
-    def assign_resources(goods_detail, d_time, order_stat):
-        porters, drivers = EmployeesStats.find_free_workers(goods_detail, d_time)
-
-        for porter in porters:
-            porter.assign_task(d_time)
-
-        for driver in drivers:
-            driver.assign_task(d_time)
-
-        order_stat.set_status('registered')
-        
-        return porters, drivers
 
 
 def initialize():
