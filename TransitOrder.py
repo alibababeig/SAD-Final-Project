@@ -1,4 +1,5 @@
 import time
+import ConfigParser
 
 
 class User:
@@ -224,17 +225,23 @@ class EmployeeStats:
         return available_porters, available_drivers
         
     @staticmethod
-    def add_porter(porter):
+    def add_porter(employee_id, schedule):
+        porter = Porter(employee_id, schedule)
         EmployeeStats.porters.append(porter)
 
+        return
+
     @staticmethod
-    def add_driver(driver):
+    def add_driver(employee_id, schedule):
+        driver = Driver(employee_id, schedule)
         EmployeeStats.drivers.append(driver)
+
+        return
 
 
 class Driver:
-    def __init__(self, employee_id):
-        self.__employee_info = EmployeeInfo(employee_id)
+    def __init__(self, employee_id, schedule):
+        self.__employee_info = EmployeeInfo(employee_id, schedule)
 
     def assign_task(self, d_time):
         self.__employee_info.assign_task(d_time)
@@ -244,8 +251,9 @@ class Driver:
 
 
 class Porter:
-    def __init__(self, employee_id):
-        self.__employee_info = EmployeeInfo(employee_id)
+    def __init__(self, employee_id, schedule):
+        self.__employee_info = EmployeeInfo(employee_id, schedule)
+
     
     def assign_task(self, d_time):
         self.__employee_info.assign_task(d_time)
@@ -255,9 +263,9 @@ class Porter:
 
 
 class EmployeeInfo:
-    def __init__(self, employee_id):
+    def __init__(self, employee_id, schedule):
         self.__employee_id = employee_id
-        self.__schedule = Schedule()
+        self.__schedule = Schedule(schedule)
     
     def assign_task(self, d_time):
         self.__schedule.assign_task(d_time)
@@ -267,11 +275,40 @@ class EmployeeInfo:
 
 
 class Schedule:
-    def __init__(self) -> None:
-        self.__work_schedule = set()
+    def __init__(self, schedule):
+        self.__work_schedule = schedule
 
     def assign_task(self, d_time):
         self.__work_schedule.add(d_time)
 
     def is_available(self, d_time):
         return d_time not in self.__work_schedule
+
+class DAO:
+
+    porters_data_file = None
+    drivers_data_file = None
+    transit_requests_data_file = None
+
+
+    @staticmethod
+    def config_DAO(config_path):
+
+        config_parser = ConfigParser.RawConfigParser()   
+        config_parser.read(config_path)
+
+        DAO.drivers_data_file = config_parser.get("EMPLOYEE_DATA", "DRIVERS_DATA")
+        DAO.porters_data_file = config_parser.get("EMPLOYEE_DATA", "PORTERS_DATA")
+
+        DAO.transit_requests_data_file = config_parser.get("REQUESTS_DATA", "TRANSIT_REQUESTS_DATA")
+
+        return
+
+    @staticmethod
+    def load():
+        return
+
+
+
+def initialize():
+    return
