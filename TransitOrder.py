@@ -205,7 +205,7 @@ class FinancialInfo:
     def request_payment(self, loc, goods_detail):
         self.__calc_total_price(loc, goods_detail)
         self.__calc_deposit()
-        print('your deposit amount is', self.__dep_amount, 'are you willing to proceed? (y/n)', end=' ')
+        print(f'your deposit amount is {self.__dep_amount:,.0f} Tomans. Are you willing to proceed? (y/n)', end=' ')
         if(input() != 'y'):
             exit("\n--error-- user doesn't want to pay us :(\n")
 
@@ -220,7 +220,7 @@ class FinancialInfo:
     def __calc_total_price(self, loc, goods_detail):
         self.__total_price = 0
         self.__total_price += goods_detail.goods_volume * 10000
-        self.__total_price += goods_detail.workers_count * 20000
+        self.__total_price += goods_detail.workers_count * 50000
         # self.dep_amount += loc.dst_address - loc.src_address  # Overload '-' operator for addresses
         
         if goods_detail.goods_type == 'dangerous':
@@ -484,12 +484,12 @@ def initialize():
     porters_count, drivers_count = EmployeesStats.load_employees()
 
     if porters_count < 50:
-        for i in range(50-porters_count):
-            EmployeesStats.add_porter(f'p{i+1}', set())
+        for i in range(porters_count + 1, 51):
+            EmployeesStats.add_porter(f'p{i}', set())
 
     if drivers_count < 50:
-        for i in range(50 - drivers_count):
-            EmployeesStats.add_driver(f'd{i+1}', set())
+        for i in range(drivers_count + 1, 51):
+            EmployeesStats.add_driver(f'd{i}', set())
 
     # print("drivers: ", len(EmployeesStats.drivers))
     # print("porters: ", len(EmployeesStats.porters))
@@ -498,14 +498,16 @@ def initialize():
     for user in users_json:
         users_objects.append(User(user['user_id'], user['orders']))
 
-    if not len(users_objects):
-        users_objects.append(User(f'u{1}', []))
+    users_count = len(users_objects)
+    if users_count < 5:
+        for i in range(users_count + 1, 6):
+            users_objects.append(User(f'u{i}', []))
     
     return users_objects
 
 
 users = initialize()
-users[0].init_transit_order()
+users[2].init_transit_order()
 
 EmployeesStats.store_employees()
 DAO.store_users(users)
