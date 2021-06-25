@@ -1,14 +1,14 @@
 import time
 import configparser
 import json
-
+import math
 
 class User:
-    def __init__(self, user_id):
+    def __init__(self, user_id, orders):
         self.__user_id = user_id
-        self.__orders = []
+        self.__orders = orders
     
-    def initTransitOrder(self):
+    def init_transit_order(self):
         t = TransitOrder()
 
         src_dst = dict()
@@ -25,11 +25,11 @@ class User:
         print('Do you goods involve dangerous stuff such as flamable chemicals? (y/n)', end=' ')
         goods_detail['goods_type'] = 'dangerous' if input() == 'y' else 'safe'
         print('Enter your goods volume in cubic meters:', end=' ')
-        goods_detail['volume'] = input()
+        goods_detail['volume'] = float(input())
         print('Enter the number of workers you require:', end=' ')
-        goods_detail['workers_count'] = input()
+        goods_detail['workers_count'] = int(input())
         goods_detail['form_type'] = 'goods_detail'
-        t.fill_form(src_dst)
+        t.fill_form(goods_detail)
 
         print('Enter your desired dispatch time: (yyyy-mm-dd (morning/afternoon/night))', end=' ')
         d_time = input()
@@ -38,7 +38,6 @@ class User:
         t.confirm_deposit()
 
         self.__orders.append(t.to_json())
-        # DAO.store_user_requests(self)
         return
 
     def to_json(self):
@@ -77,11 +76,12 @@ class TransitOrder:
         return
 
     def confirm_deposit(self):
-        paid = self.__financial_info.request_payment()
-        if paid:
-            d_time = self.__order_stat.dispatch_time
-            self.__porters, self.__drivers = ResourceHandler.assign_resources(
-                self.__location_info, self.__goods_info, d_time)
+        paid = self.__financial_info.request_payment(self.__location_info, self.__goods_info)
+        if not paid:
+            exit('\n--error-- not paid\n')
+
+        d_time = self.__order_stat.dispatch_time
+        self.__porters, self.__drivers = ResourceHandler.assign_resources(self.__goods_info, d_time, self.__order_stat)
                 
         return
 
@@ -102,7 +102,7 @@ class TransitOrder:
             drivers_ids.append(driver.to_json()['employee_info']['employee_id'])
 
         json['porters_ids'] = porters_ids
-        json['dirvers_ids'] = drivers_ids
+        json['drivers_ids'] = drivers_ids
 
         return json
 
@@ -205,8 +205,13 @@ class FinancialInfo:
     def request_payment(self, loc, goods_detail):
         self.__calc_total_price(loc, goods_detail)
         self.__calc_deposit()
+        print('your deposit amount is', self.__dep_amount, 'are you willing to proceed? (y/n)', end=' ')
+        if(input() != 'y'):
+            exit("\n--error-- user doesn't want to pay us :(\n")
+
         self.__pay(self.__dep_amount)
-        return
+
+        return self.__paid
 
     def __calc_deposit(self):
         self.__dep_amount = self.__total_price * self.__dep_percentage
@@ -229,12 +234,6 @@ class FinancialInfo:
         return
 
     def to_json(self):
-        self.__dep_amount = 0
-        self.__dep_percentage = 0.5
-        self.__total_price = 0
-        self.__dangerous_overcharge = 1.1
-        self.__paid = False
-
         json = dict()
         json['dep_amount'] = self.__dep_amount
         json['dep_percentage'] = self.__dep_percentage
@@ -245,14 +244,14 @@ class FinancialInfo:
         return json
     
 
-    @property
-    def paid(self): return self.__paid
+    # @property
+    # def paid(self): return self.__paid
 
 
 class ResourceHandler:
 
     @staticmethod
-    def assign_resources(goods_detail, d_time):
+    def assign_resources(goods_detail, d_time, order_stat):
         porters, drivers = EmployeesStats.find_free_workers(goods_detail, d_time)
 
         for porter in porters:
@@ -260,6 +259,8 @@ class ResourceHandler:
 
         for driver in drivers:
             driver.assign_task(d_time)
+
+        order_stat.set_status('registered')
         
         return porters, drivers
 
@@ -273,7 +274,7 @@ class EmployeesStats:
         available_porters = []
         available_drivers = []
         porters_needed = goods_detail.workers_count
-        drivers_needed = goods_detail.goods_volume / 20 # Each truck has a capacity
+        drivers_needed = math.ceil(goods_detail.goods_volume / 20) # Each truck has a capacity
                                                         # of 20 cubic meters
         for porter in EmployeesStats.porters:
             if porters_needed == 0:
@@ -322,7 +323,7 @@ class EmployeesStats:
             driver_schedule = set(driver['employee_info']['schedule'])
             EmployeesStats.add_driver(driver_id, driver_schedule)
 
-        return
+        return len(EmployeesStats.porters), len(EmployeesStats.drivers)
 
     @staticmethod
     def store_employees():
@@ -403,7 +404,7 @@ class DAO:
 
 
     @staticmethod
-    def config_DAO(config_path):
+    def config(config_path):
 
         config_parser = configparser.RawConfigParser()   
         config_parser.read(config_path)
@@ -478,8 +479,33 @@ class DAO:
 
 
 def initialize():
-    return
+    DAO.config('./app.config')
+    users_json = DAO.load_users()
+    porters_count, drivers_count = EmployeesStats.load_employees()
+
+    if porters_count < 50:
+        for i in range(50-porters_count):
+            EmployeesStats.add_porter(f'p{i+1}', set())
+
+    if drivers_count < 50:
+        for i in range(50 - drivers_count):
+            EmployeesStats.add_driver(f'd{i+1}', set())
+
+    # print("drivers: ", len(EmployeesStats.drivers))
+    # print("porters: ", len(EmployeesStats.porters))
+
+    users_objects = []
+    for user in users_json:
+        users_objects.append(User(user['user_id'], user['orders']))
+
+    if not len(users_objects):
+        users_objects.append(User(f'u{1}', []))
+    
+    return users_objects
 
 
-DAO.config_DAO('./app.config')  # necessary
-# DAO.load()
+users = initialize()
+users[0].init_transit_order()
+
+EmployeesStats.store_employees()
+DAO.store_users(users)
