@@ -37,8 +37,16 @@ class User:
 
         t.confirm_deposit()
 
-        self.__orders.append(t)
+        self.__orders.append(t.to_json())
+        # DAO.store_user_requests(self)
         return
+
+    def to_json(self):
+        json = dict()
+        json['user_id'] = self.__user_id
+        json['orders'] = self.__orders
+
+        return json
 
 
 class TransitOrder:
@@ -77,6 +85,27 @@ class TransitOrder:
                 
         return
 
+    def to_json(self):
+        json = dict()
+        json['order_time'] = self.__order_time 
+        json['location_info'] = self.__location_info.to_json()
+        json['goods_info'] = self.__goods_info.to_json()
+        json['order_stat'] = self.__order_stat.to_json()
+        json['financial_info'] = self.__financial_info.to_json()
+
+        porters_ids = []
+        for porter in self.__porters:
+            porters_ids.append(porter.to_json()['employee_info']['employee_id'])
+
+        drivers_ids = []
+        for driver in self.__drivers:
+            drivers_ids.append(driver.to_json()['employee_info']['employee_id'])
+
+        json['porters_ids'] = porters_ids
+        json['dirvers_ids'] = drivers_ids
+
+        return json
+
 
 class LocationInfo:
     def __init__(self):
@@ -92,6 +121,14 @@ class LocationInfo:
         self.__src_type = src_dst['src_type']
 
         return
+
+    def to_json(self):
+        json = dict()
+        json['src_address'] = self.__src_address
+        json['dst_address'] = self.__dst_address
+        json['src_type'] = self.__src_type
+
+        return json
 
     @property
     def src_address(self): return self.__src_address
@@ -114,6 +151,14 @@ class GoodsInfo:
         self.__workers_count = goods_detail['workers_count']
 
         return
+
+    def to_json(self):
+        json = dict()
+        json['goods_type'] = self.__goods_type
+        json['goods_volume'] = self.__goods_volume
+        json['workers_count'] = self.__workers_count
+
+        return json
 
     @property
     def goods_type(self): return self.__goods_type
@@ -138,6 +183,13 @@ class OrderStat:
         self.__status = stat
         return
 
+    def to_json(self):
+        json = dict()
+        json['status'] = self.__status
+        json['dispatch_time'] = self.__dispatch_time
+
+        return json
+
     @property
     def dispatch_time(self): return self.__dispatch_time
 
@@ -147,7 +199,7 @@ class FinancialInfo:
         self.__dep_amount = 0
         self.__dep_percentage = 0.5
         self.__total_price = 0
-        self.__dangerous_percentage = 1.1
+        self.__dangerous_overcharge = 1.1
         self.__paid = False
 
     def request_payment(self, loc, goods_detail):
@@ -167,7 +219,7 @@ class FinancialInfo:
         # self.dep_amount += loc.dst_address - loc.src_address  # Overload '-' operator for addresses
         
         if goods_detail.goods_type == 'dangerous':
-            self.__total_price *= self.__dangerous_percentage
+            self.__total_price *= self.__dangerous_overcharge
 
         return
 
@@ -175,6 +227,23 @@ class FinancialInfo:
         # self.paid = SHAPARAK.pay(price)
         self.__paid = True
         return
+
+    def to_json(self):
+        self.__dep_amount = 0
+        self.__dep_percentage = 0.5
+        self.__total_price = 0
+        self.__dangerous_overcharge = 1.1
+        self.__paid = False
+
+        json = dict()
+        json['dep_amount'] = self.__dep_amount
+        json['dep_percentage'] = self.__dep_percentage
+        json['total_price'] = self.__total_price
+        json['dangerous_overcharge'] = self.__dangerous_overcharge
+        json['paid'] = self.__paid
+
+        return json
+    
 
     @property
     def paid(self): return self.__paid
@@ -323,14 +392,14 @@ class Schedule:
 
     def to_json(self):
         json = dict()
-        json['schedule'] = self.__work_schedule
+        json['schedule'] = list(self.__work_schedule)
         return json
 
 class DAO:
 
     porters_data_address = None
     drivers_data_address = None
-    transit_requests_data_address = None
+    users_data_address = None
 
 
     @staticmethod
@@ -342,7 +411,7 @@ class DAO:
         DAO.drivers_data_address = config_parser.get("EMPLOYEE_DATA", "DRIVERS_DATA")
         DAO.porters_data_address = config_parser.get("EMPLOYEE_DATA", "PORTERS_DATA")
 
-        DAO.transit_requests_data_address = config_parser.get("REQUESTS_DATA", "TRANSIT_REQUESTS_DATA")
+        DAO.users_data_address = config_parser.get("USERS_DATA", "USERS_DATA")
 
         return
 
@@ -350,7 +419,7 @@ class DAO:
     def load_employees():
         assert DAO.porters_data_address != None
         assert DAO.drivers_data_address != None
-        assert DAO.transit_requests_data_address != None
+        assert DAO.users_data_address != None
 
         porters_file = open(DAO.porters_data_address,)
         porters_json = json.load(porters_file)
@@ -365,15 +434,6 @@ class DAO:
 
         return porters_json, drivers_json
 
-
-    @staticmethod
-    def load_transit_requests():
-        transit_requests_file = open(DAO.transit_requests_data_address)
-        transit_request_json = json.load(transit_requests_file)
-        transit_requests_file.close()
-
-        return
-
     
     @staticmethod
     def store_employees(porters, drivers):
@@ -382,7 +442,7 @@ class DAO:
             porters_json.append(porter.to_json())
 
         porters_file = open(DAO.porters_data_address, 'w')
-        json.dump(porters_json, porters_file)
+        json.dump(porters_json, porters_file, indent=4)
         porters_file.close()
 
         drivers_json = []
@@ -390,14 +450,29 @@ class DAO:
             drivers_json.append(driver.to_json())
 
         drivers_file = open(DAO.drivers_data_address, 'w')
-        json.dump(drivers_json, drivers_file)
+        json.dump(drivers_json, drivers_file, indent=4)
         drivers_file.close()
 
         return
 
 
     @staticmethod
-    def store_transit_requests():
+    def load_users():
+        users_file = open(DAO.users_data_address)
+        users_json = json.load(users_file)
+        users_file.close()
+
+        return users_json
+
+    @staticmethod
+    def store_users(users):
+        users_json = []
+        for user in users:
+            users_json.append(user.to_json())
+
+        users_file = open(DAO.users_data_address, 'w')
+        json.dump(users_json, users_file, indent=4)
+        users_file.close()
 
         return
 
