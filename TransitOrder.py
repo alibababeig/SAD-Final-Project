@@ -22,7 +22,7 @@ class User:
         goods_detail = dict()
         print('Do you goods involve dangerous stuff such as flamable chemicals? (y/n)', end=' ')
         goods_detail['goods_type'] = 'dangerous' if input() == 'y' else 'safe'
-        print('Enter your goods volume:', end=' ')
+        print('Enter your goods volume in cubic meters:', end=' ')
         goods_detail['volume'] = input()
         print('Enter the number of workers you require:', end=' ')
         goods_detail['workers_count'] = input()
@@ -202,8 +202,8 @@ class EmployeeStats:
         available_porters = []
         available_drivers = []
         porters_needed = goods_detail.workers_count
-        drivers_needed = goods_detail.goods_volume / 12 # Each truck has a capacity
-                                                        # of 12 cubic meters
+        drivers_needed = goods_detail.goods_volume / 20 # Each truck has a capacity
+                                                        # of 20 cubic meters
         for porter in EmployeeStats.porters:
             if porters_needed == 0:
                 break
@@ -213,7 +213,7 @@ class EmployeeStats:
                 porters_needed -= 1
         
         for driver in EmployeeStats.drivers:
-            if porters_needed == 0:
+            if drivers_needed == 0:
                 break
 
             if driver.is_available(d_time):
