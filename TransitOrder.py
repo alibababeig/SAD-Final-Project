@@ -1,5 +1,6 @@
 import time
-import ConfigParser
+import configparser
+import json
 
 
 class User:
@@ -286,26 +287,43 @@ class Schedule:
 
 class DAO:
 
-    porters_data_file = None
-    drivers_data_file = None
-    transit_requests_data_file = None
+    porters_data_address = None
+    drivers_data_address = None
+    transit_requests_data_address = None
 
 
     @staticmethod
     def config_DAO(config_path):
 
-        config_parser = ConfigParser.RawConfigParser()   
+        config_parser = configparser.RawConfigParser()   
         config_parser.read(config_path)
 
-        DAO.drivers_data_file = config_parser.get("EMPLOYEE_DATA", "DRIVERS_DATA")
-        DAO.porters_data_file = config_parser.get("EMPLOYEE_DATA", "PORTERS_DATA")
+        DAO.drivers_data_address = config_parser.get("EMPLOYEE_DATA", "DRIVERS_DATA")
+        DAO.porters_data_address = config_parser.get("EMPLOYEE_DATA", "PORTERS_DATA")
 
-        DAO.transit_requests_data_file = config_parser.get("REQUESTS_DATA", "TRANSIT_REQUESTS_DATA")
+        DAO.transit_requests_data_address = config_parser.get("REQUESTS_DATA", "TRANSIT_REQUESTS_DATA")
 
         return
 
     @staticmethod
     def load():
+        assert DAO.porters_data_address != None
+        assert DAO.drivers_data_address != None
+        assert DAO.transit_requests_data_address != None
+
+        porters_file = open(DAO.porters_data_address)
+        porters_json = json.load(porters_file)
+        porters_file.close()
+
+        drivers_file = open(DAO.drivers_data_address)
+        drivers_json = json.load(drivers_file)
+        drivers_file.close()
+
+        transit_requests_file = open(DAO.transit_requests_data_address)
+        transit_request_json = json.load(transit_requests_file)
+        transit_requests_file.close()
+
+
         return
 
 
