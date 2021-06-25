@@ -184,7 +184,7 @@ class ResourceHandler:
 
     @staticmethod
     def assign_resources(goods_detail, d_time):
-        porters, drivers = EmployeeStats.find_free_workers(goods_detail, d_time)
+        porters, drivers = EmployeesStats.find_free_workers(goods_detail, d_time)
 
         for porter in porters:
             porter.assign_task(d_time)
@@ -195,7 +195,7 @@ class ResourceHandler:
         return porters, drivers
 
 
-class EmployeeStats:
+class EmployeesStats:
     drivers = []
     porters = []
 
@@ -206,7 +206,7 @@ class EmployeeStats:
         porters_needed = goods_detail.workers_count
         drivers_needed = goods_detail.goods_volume / 20 # Each truck has a capacity
                                                         # of 20 cubic meters
-        for porter in EmployeeStats.porters:
+        for porter in EmployeesStats.porters:
             if porters_needed == 0:
                 break
 
@@ -214,7 +214,7 @@ class EmployeeStats:
                 available_porters.append(porter)
                 porters_needed -= 1
         
-        for driver in EmployeeStats.drivers:
+        for driver in EmployeesStats.drivers:
             if drivers_needed == 0:
                 break
 
@@ -228,14 +228,36 @@ class EmployeeStats:
     @staticmethod
     def add_porter(employee_id, schedule):
         porter = Porter(employee_id, schedule)
-        EmployeeStats.porters.append(porter)
+        EmployeesStats.porters.append(porter)
 
         return
 
     @staticmethod
     def add_driver(employee_id, schedule):
         driver = Driver(employee_id, schedule)
-        EmployeeStats.drivers.append(driver)
+        EmployeesStats.drivers.append(driver)
+
+        return
+
+    @staticmethod
+    def load_employees():
+        porters_json, drivers_json = DAO.load_employees()
+
+        for porter in porters_json:
+            porter_id = porter['employee_info']['employee_id']
+            porter_schedule = set(porter['employee_info']['schedule'])
+            EmployeesStats.add_porter(porter_id, porter_schedule)
+
+        for driver in drivers_json:
+            driver_id = driver['employee_info']['employee_id']
+            driver_schedule = set(driver['employee_info']['schedule'])
+            EmployeesStats.add_driver(driver_id, driver_schedule)
+
+        return
+
+    @staticmethod
+    def store_employees():
+        DAO.store_employees(EmployeesStats.porters, EmployeesStats.drivers)
 
         return
 
@@ -250,6 +272,10 @@ class Driver:
     def is_available(self, d_time):
         return self.__employee_info.is_available(d_time)
 
+    def to_json(self):
+        json = dict()
+        json['employee_info'] = self.__employee_info.to_json()
+        return json
 
 class Porter:
     def __init__(self, employee_id, schedule):
@@ -261,6 +287,11 @@ class Porter:
     
     def is_available(self, d_time):
         return self.__employee_info.is_available(d_time)
+
+    def to_json(self):
+        json = dict()
+        json['employee_info'] = self.__employee_info.to_json()
+        return json
 
 
 class EmployeeInfo:
@@ -274,6 +305,11 @@ class EmployeeInfo:
     def is_available(self, d_time):
         return self.__schedule.is_available(d_time)
 
+    def to_json(self):
+        json = self.__schedule.to_json()
+        json['employee_id'] = self.__employee_id
+        return json
+
 
 class Schedule:
     def __init__(self, schedule):
@@ -284,6 +320,11 @@ class Schedule:
 
     def is_available(self, d_time):
         return d_time not in self.__work_schedule
+
+    def to_json(self):
+        json = dict()
+        json['schedule'] = self.__work_schedule
+        return json
 
 class DAO:
 
@@ -306,12 +347,12 @@ class DAO:
         return
 
     @staticmethod
-    def load():
+    def load_employees():
         assert DAO.porters_data_address != None
         assert DAO.drivers_data_address != None
         assert DAO.transit_requests_data_address != None
 
-        porters_file = open(DAO.porters_data_address)
+        porters_file = open(DAO.porters_data_address,)
         porters_json = json.load(porters_file)
         porters_file.close()
 
@@ -319,14 +360,51 @@ class DAO:
         drivers_json = json.load(drivers_file)
         drivers_file.close()
 
+        # for key, value in porters_json.items():
+            # continue
+
+        return porters_json, drivers_json
+
+
+    @staticmethod
+    def load_transit_requests():
         transit_requests_file = open(DAO.transit_requests_data_address)
         transit_request_json = json.load(transit_requests_file)
         transit_requests_file.close()
 
+        return
+
+    
+    @staticmethod
+    def store_employees(porters, drivers):
+        porters_json = []
+        for porter in porters:
+            porters_json.append(porter.to_json())
+
+        porters_file = open(DAO.porters_data_address, 'w')
+        json.dump(porters_json, porters_file)
+        porters_file.close()
+
+        drivers_json = []
+        for driver in drivers:
+            drivers_json.append(driver.to_json())
+
+        drivers_file = open(DAO.drivers_data_address, 'w')
+        json.dump(drivers_json, drivers_file)
+        drivers_file.close()
 
         return
 
 
+    @staticmethod
+    def store_transit_requests():
+
+        return
+
 
 def initialize():
     return
+
+
+DAO.config_DAO('./app.config')  # necessary
+# DAO.load()
